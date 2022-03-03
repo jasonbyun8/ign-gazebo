@@ -87,10 +87,11 @@ namespace components
   IGN_GAZEBO_REGISTER_COMPONENT("ign_gazebo_components.Model", Model)
 
   /// \brief A component that holds the model's SDF DOM
-  using ModelSdf = Component<sdf::Model,
-                   class ModelTag,
-                   serializers::SdfModelSerializer>;
-  IGN_GAZEBO_REGISTER_COMPONENT("ign_gazebo_components.ModelSdf", ModelSdf)
+  using ModelSdf = Component<sdf::Model, class ModelTag>;
+  // using ModelSdf = Component<sdf::Model,
+  //                  class ModelTag,
+  //                  serializers::SdfModelSerializer>;
+  // IGN_GAZEBO_REGISTER_COMPONENT("ign_gazebo_components.ModelSdf", ModelSdf)
 }
 }
 }
