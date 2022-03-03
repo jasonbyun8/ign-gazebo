@@ -39,6 +39,7 @@
 
 #include "Plot3D.hh"
 
+
 namespace ignition::gazebo::gui
 {
   /// \brief Private data class for Plot3D
@@ -225,7 +226,8 @@ void Plot3D::Update(const UpdateInfo &, EntityComponentManager &_ecm)
     this->dataPtr->markerMsg.set_ns("plot_" + this->dataPtr->targetName);
     this->dataPtr->markerMsg.set_id(this->dataPtr->targetEntity);
     this->dataPtr->markerMsg.set_action(msgs::Marker::ADD_MODIFY);
-    this->dataPtr->markerMsg.set_type(msgs::Marker::LINE_STRIP);
+    this->dataPtr->markerMsg.set_type(msgs::Marker::TRIANGLE_FAN);
+    this->dataPtr->markerMsg.clear_point();
     this->dataPtr->markerMsg.set_visibility(msgs::Marker::GUI);
 
     // Update view
@@ -245,7 +247,18 @@ void Plot3D::Update(const UpdateInfo &, EntityComponentManager &_ecm)
     return;
 
   this->dataPtr->prevPos = point;
-  ignition::msgs::Set(this->dataPtr->markerMsg.add_point(), point);
+  // ignition::msgs::Set(this->dataPtr->markerMsg.add_point(), point);
+  ignition::msgs::Set(this->dataPtr->markerMsg.mutable_pose(),
+                    ignition::math::Pose3d(point.X(), point.Y(), 0, 0, 0, 0));
+
+      ignition::msgs::Set(this->dataPtr->markerMsg.add_point(),
+            ignition::math::Vector3d(0, 0, 0.05));
+      double radius = 1.0;
+      for (double t = 0; t <= 2.0 * 3.14; t+= 0.01)
+      {
+        ignition::msgs::Set(this->dataPtr->markerMsg.add_point(),
+            ignition::math::Vector3d(radius * cos(t), radius * sin(t), 0.05));
+      }
 
   // Reduce message array
   if (this->dataPtr->markerMsg.point_size() > this->dataPtr->maxPoints)
