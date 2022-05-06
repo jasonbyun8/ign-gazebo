@@ -220,6 +220,7 @@ namespace gui
     /// \internal
     /// \brief Pointer to private data
     private: std::unique_ptr<Plot3DPrivate> dataPtr;
+    private: Entity id_marker;
   };
 }
 }
