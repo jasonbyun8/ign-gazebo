@@ -25,6 +25,7 @@
 #include <iostream>
 #include <string>
 #include <vector>
+#include <QQmlProperty>
 
 #include <ignition/common/Console.hh>
 #include <ignition/common/MeshManager.hh>
@@ -78,19 +79,6 @@ namespace ignition::gazebo
 
     /// \brief Handle placement requests
     public: void HandlePlacement();
-
-    /// \brief Retrieve the point on a plane at z = 0 in the 3D scene hit by a
-    /// ray cast from the given 2D screen coordinates.
-    /// \param[in] _screenPos 2D coordinates on the screen, in pixels.
-    /// \param[in] _camera User camera
-    /// \param[in] _rayQuery Ray query for mouse clicks
-    /// \param[in] _offset Offset along the plane normal
-    /// \return 3D coordinates of a point in the 3D scene.
-    math::Vector3d ScreenToPlane(
-      const math::Vector2i &_screenPos,
-      const rendering::CameraPtr &_camera,
-      const rendering::RayQueryPtr &_rayQuery,
-      const float offset = 0.0);
 
     /// \brief Ignition communication node.
     public: transport::Node node;
@@ -180,6 +168,17 @@ void Spawn::LoadConfig(const tinyxml2::XMLElement *)
   if (this->title.empty())
     this->title = "Spawn";
 
+  static bool done{false};
+  if (done)
+  {
+    std::string msg{"Only one Spawn plugin is supported at a time."};
+    ignerr << msg << std::endl;
+    QQmlProperty::write(this->PluginItem(), "message",
+        QString::fromStdString(msg));
+    return;
+  }
+  done = true;
+
   // World name from window, to construct default topics and services
   auto worldNames = gui::worldNames();
   if (!worldNames.empty())
@@ -187,34 +186,6 @@ void Spawn::LoadConfig(const tinyxml2::XMLElement *)
 
   ignition::gui::App()->findChild
     <ignition::gui::MainWindow *>()->installEventFilter(this);
-}
-
-
-// TODO(ahcorde): Replace this when this function is on ign-rendering6
-/////////////////////////////////////////////////
-math::Vector3d SpawnPrivate::ScreenToPlane(
-    const math::Vector2i &_screenPos,
-    const rendering::CameraPtr &_camera,
-    const rendering::RayQueryPtr &_rayQuery,
-    const float offset)
-{
-  // Normalize point on the image
-  double width = _camera->ImageWidth();
-  double height = _camera->ImageHeight();
-
-  double nx = 2.0 * _screenPos.X() / width - 1.0;
-  double ny = 1.0 - 2.0 * _screenPos.Y() / height;
-
-  // Make a ray query
-  _rayQuery->SetFromCamera(
-      _camera, math::Vector2d(nx, ny));
-
-  math::Planed plane(math::Vector3d(0, 0, 1), offset);
-
-  math::Vector3d origin = _rayQuery->Origin();
-  math::Vector3d direction = _rayQuery->Direction();
-  double distance = plane.Distance(origin, direction);
-  return origin + direction * distance;
 }
 
 /////////////////////////////////////////////////
@@ -225,7 +196,7 @@ void SpawnPrivate::HandlePlacement()
 
   if (this->spawnPreview && this->hoverDirty)
   {
-    math::Vector3d pos = this->ScreenToPlane(
+    math::Vector3d pos = ignition::rendering::screenToPlane(
       this->mouseHoverPos, this->camera, this->rayQuery);
     pos.Z(this->spawnPreview->WorldPosition().Z());
     this->spawnPreview->SetWorldPosition(pos);
@@ -245,7 +216,7 @@ void SpawnPrivate::HandlePlacement()
       if (!_result)
         ignerr << "Error creating entity" << std::endl;
     };
-    math::Vector3d pos = this->ScreenToPlane(
+    math::Vector3d pos = ignition::rendering::screenToPlane(
       this->mouseEvent.Pos(), this->camera, this->rayQuery);
     pos.Z(pose.Pos().Z());
     msgs::EntityFactory req;
